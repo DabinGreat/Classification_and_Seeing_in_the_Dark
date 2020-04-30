@@ -72,7 +72,7 @@ class RandomCrop(object):
             is made.
     """
 
-    def __init__(self, output_size=(64, 64)):
+    def __init__(self, output_size=(112, 112)):
         assert isinstance(output_size, (int, tuple))
         if isinstance(output_size, int):
             self.output_size = (output_size, output_size)
@@ -169,7 +169,6 @@ if __name__ == '__main__':
     for i_batch, sample_batched in enumerate(dataloader):
         if i_batch == 0:
 
-            print(sample_batched['video_x'].size())
-        print(i_batch, sample_batched['video_x'], sample_batched['video_label'])
+            print(i_batch, sample_batched['video_x'].size(), sample_batched['video_label'].size())
 
 #b,t,c,h,w
