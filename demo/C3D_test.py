@@ -76,6 +76,7 @@ class C3D(nn.Module):
 
 if __name__ == '__mian__':
 
+
     input = Variable(torch.randn(4, 3, 16, 128, 128))
     # print(input.size())
     model = C3D()

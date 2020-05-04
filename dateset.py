@@ -72,7 +72,7 @@ class RandomCrop(object):
             is made.
     """
 
-    def __init__(self, output_size=(112, 112)):
+    def __init__(self, output_size=(128, 128)):
         assert isinstance(output_size, (int, tuple))
         if isinstance(output_size, int):
             self.output_size = (output_size, output_size)

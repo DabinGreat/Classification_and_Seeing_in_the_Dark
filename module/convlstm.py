@@ -188,3 +188,12 @@ class ConvLSTM(nn.Module):
         if not isinstance(param, list):
             param = [param] * num_layers
         return param
+
+
+if __name__ == '__main__':
+
+    x = torch.rand((3, 2, 4, 128, 128))
+    convlstm = ConvLSTM(input_dim=4, hidden_dim=4, kernel_size=(3,3), num_layers=4,
+                        batch_first=False, bias=True, return_all_layers=False)
+    _, last_states = convlstm(x)
+    print(_[0].size())

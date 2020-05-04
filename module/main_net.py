@@ -7,7 +7,7 @@ import torch.nn as nn
 
 class C3D(nn.Module):
 
-# input 128*128
+# input 128*128，b,c,t,h,w
 
     def __init__(self):
         super(C3D, self).__init__()
@@ -29,7 +29,7 @@ class C3D(nn.Module):
         self.conv5a = nn.Conv3d(512, 512, kernel_size=(3, 3, 3), padding=(1, 1, 1))
         self.conv5b = nn.Conv3d(512, 512, kernel_size=(3, 3, 3), padding=(1, 1, 1))
         self.pool5 = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        self.conv6 = nn.Conv3d(512, 64, kernel_size=(1, 1, 1))
+        self.conv6 = nn.Conv3d(512, 32, kernel_size=(1, 1, 1))
 
         # self.fc6 = nn.Linear(8192, 4096)
         # self.fc7 = nn.Linear(4096, 4096)
@@ -236,7 +236,7 @@ class ConvLSTM(nn.Module):
     """
 
     def __init__(self, input_dim, hidden_dim, kernel_size, num_layers,
-                 batch_first=False, bias=True, return_all_layers=False):
+                 time_first=False, bias=True, return_all_layers=False):
         super(ConvLSTM, self).__init__()
 
         self._check_kernel_size_consistency(kernel_size)
@@ -251,7 +251,7 @@ class ConvLSTM(nn.Module):
         self.hidden_dim = hidden_dim
         self.kernel_size = kernel_size
         self.num_layers = num_layers
-        self.batch_first = batch_first
+        self.time_first = time_first
         self.bias = bias
         self.return_all_layers = return_all_layers
 
@@ -278,9 +278,9 @@ class ConvLSTM(nn.Module):
         -------
         last_state_list, layer_output
         """
-        if not self.batch_first:
-            # (t, b, c, h, w) -> (b, t, c, h, w)
-            input_tensor = input_tensor.permute(1, 0, 2, 3, 4)
+        if not self.time_first:
+            # (b, c, t, h, w) -> (b, t, c, h, w)
+            input_tensor = input_tensor.permute(0, 2, 1, 3, 4)
 
         b, _, _, h, w = input_tensor.size()
 
@@ -338,6 +338,40 @@ class ConvLSTM(nn.Module):
         return param
 
 
-class MainModel(nn.model):
+class MainNet(nn.Module):
 
-    pass
+    def __init__(self, input_dim, hidden_dim, lstm_kernel_size, num_layers, batch_size, num_class):
+        super(MainNet, self).__init__()
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.lstm_kernel_size = lstm_kernel_size
+        self.num_layers = num_layers
+        self.batch_size = batch_size
+        self.num_class = num_class
+
+        c3d = C3D()
+        convlstm = ConvLSTM(input_dim=self.input_dim,
+                            hidden_dim=self.hidden_dim,
+                            kernel_size=self.lstm_kernel_size,
+                            num_layers=self.num_layers)
+        self.c3d = c3d
+        self.convlstm = convlstm
+        self.fc = nn.Linear(8192,self.num_class)
+
+
+    def forward(self, input_tensor):
+        x = self.c3d(input_tensor)
+        # x_dim = list(x.size())
+        # x_channel = x_dim[1]
+        # x_squence = x_dim[2]
+        # x_high = x_dim[3]
+        # x_width = x_dim[4]
+        # x_total = x_channel * x_squence * x_high * x_width
+
+        x, _ = self.convlstm(x)
+        x = x[0]
+        x = x.view(self.batch_size, -1)
+        x = self.fc(x)
+
+        return x
+

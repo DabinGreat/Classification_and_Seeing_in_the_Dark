@@ -8,9 +8,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from torchfusion_utils.metrics import Accuracy
 from dateset import UCF101, ClipSubstractMean, RandomCrop, Rescale, ToTensor
-from lstm import ConvLSTM
-from res3D import Res3D
-from moudel.C3D import C3D
+from module.C3D import C3D
 
 
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
@@ -20,15 +18,15 @@ batch_size = 4
 root_list = '/Users/dabincheng/Downloads/data/UCF-24'
 info_list = '/Users/dabincheng/Downloads/data/label/trianlist.txt'
 myUCF101 = UCF101(info_list, root_list,
-                  transform=transforms.Compose([ClipSubstractMean(), Rescale(), RandomCrop(), ToTensor()]))
+                  transform=transforms.Compose([Rescale(), RandomCrop(), ToTensor()]))
 dataloader = DataLoader(myUCF101, batch_size=batch_size, shuffle=True, num_workers=4)
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-# moudel = C3D(num_classes=101, pretrained=False)
+moudel = C3D()
 
-moudel = ConvLSTM(input_dim=3, hidden_dim=3, kernel_size=(3,3), num_layers=4,
-                 batch_size=4, seq_len=16, input_size=(112,112), num_class=24,
-                 batch_first=False, bias=True, return_all_layers=False)
+# moudel = ConvLSTM(input_dim=3, hidden_dim=3, kernel_size=(3,3), num_layers=4,
+#                  batch_size=4, seq_len=16, input_size=(112,112), num_class=24,
+#                  batch_first=False, bias=True, return_all_layers=False)
 
 moudel = moudel.to(device)
 lr = 0.001
@@ -45,21 +43,20 @@ def train():
         data, label = sample_batched['video_x'], sample_batched['video_label']
         label = torch.squeeze(label)
         data, label = data.float(), label.long() - 1
+        data = data.permute(0, 2, 1, 3, 4)
         data, label = data.to(device), label.to(device)
         optimizer.zero_grad()
         predictions = moudel(data)
         loss = criteria(predictions, label)
         train_acc.update(predictions, label)
+        print(predictions.data, label) #
         loss.backward()
-        # expp = torch.softmax(predictions, dim=1)
-        # confidence, clas = expp.topk(1, dim=1)
+        expp = torch.softmax(predictions, dim=1)
+        confidence, clas = expp.topk(1, dim=1)
+        print(expp.data, confidence, clas) #
         optimizer.step()
 
-        print(i_batch + 1, 'loss:{}'.format(loss.item()), '\t', 'train_acc:{}'.format(train_acc.getValue()), '\n',
-              # 'pre:{}'.format(predictions.data),
-              # 'label:{}'.format(label),
-              # 'confidence:{}'.format(confidence.data), '\t', 'clas:{}'.format(clas)
-              )
+        print(i_batch + 1, 'loss:{}'.format(loss.item()), '\t', 'train_acc:{}'.format(train_acc.getValue()))
 
     return
 
