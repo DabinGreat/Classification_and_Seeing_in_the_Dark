@@ -54,7 +54,7 @@ def train():
 
         print(i_batch + 1, 'loss:{}\t'.format(loss.item()), 'train_acc:{}\n'.format(train_acc.getValue()),
               # 'pre:{}\t'.format(predictions.data), 'label:{}\n'.format(label),
-              'confidence :{}\t'.format(soft_out),
+              'confidence:{}\t'.format(soft_out),
               'clas:{}'.format(clas))
 
     return
