@@ -172,4 +172,4 @@ if __name__ == '__main__':
     #         print(i_batch, sample_batched['video_x'].size(), sample_batched['video_label'].size())
 
 #b,t,c,h,w
-print(myUCF101.__len__())
+print( myUCF101.__len__())
