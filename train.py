@@ -42,6 +42,7 @@ def train(n_epochs, save_path):
 
     saving_criteria_of_model = 0
     training_loss_array = []
+    training_acc_array = []
     train_acc = Accuracy()
 
     for i in range(n_epochs):
@@ -68,8 +69,9 @@ def train(n_epochs, save_path):
             train_acc.update(predictions, label)
         scheduler.step()
 
-        training_loss = training_loss / len(myUCF101.__len__())
+        training_loss = training_loss / 2332
         training_loss_array.append(training_loss)
+        training_acc_array.append(train_acc)
 
         print(
             '{} / {} '.format(i + 1, n_epochs),
@@ -81,14 +83,19 @@ def train(n_epochs, save_path):
             saving_criteria_of_model = train_acc.getValue()
             print('--------------------------Saving Model---------------------------')
 
-        plt.figure(figsize=(4, 4))
-        x_axis = (range(n_epochs))
-        plt.plot(x_axis, training_loss_array, 'r')
-        plt.title('A gragh of training loss vs validation loss')
-        plt.legend(['train loss', 'validation loss'])
-        plt.xlabel('Number of Epochs')
-        plt.ylabel('Loss' )
-        plt.show()
+    plt.figure(figsize=(4, 4))
+    x_axis = range(n_epochs)
+    fig, ax1 = plt.subplots()
+    ax2 = ax1.twinx()
+    ax1.plot(x_axis, training_loss_array, 'b')
+    ax2.plot(x_axis, training_acc_array, 'r')
+
+    ax1.set_xlabel('n_epochs')
+    ax1.set_ylabel('training_loss_array')
+    ax2.set_ylabel('training_acc_array')
+    plt.title('A gragh of training loss')
+    plt.savefig('a.png')
+    plt.show()
 
     return
 
