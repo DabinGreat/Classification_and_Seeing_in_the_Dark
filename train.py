@@ -87,7 +87,7 @@ def train(n_epochs, save_path):
         plt.title('A gragh of training loss vs validation loss')
         plt.legend(['train loss', 'validation loss'])
         plt.xlabel('Number of Epochs')
-        plt.ylabel('Loss' )
+        plt.ylabel('Loss')
         plt.show()
 
     return
