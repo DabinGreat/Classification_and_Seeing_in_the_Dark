@@ -166,9 +166,10 @@ if __name__ == '__main__':
 
     dataloader = DataLoader(myUCF101, batch_size=4, shuffle=True, num_workers=1)
 
-    for i_batch, sample_batched in enumerate(dataloader):
-        if i_batch == 0:
-
-            print(i_batch, sample_batched['video_x'].size(), sample_batched['video_label'].size())
+    # for i_batch, sample_batched in enumerate(dataloader):
+    #     if i_batch == 0:
+    #
+    #         print(i_batch, sample_batched['video_x'].size(), sample_batched['video_label'].size())
 
 #b,t,c,h,w
+# print(myUCF101.__len__())

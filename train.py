@@ -4,6 +4,7 @@
 import os
 import torch
 import torch.nn as nn
+import matplotlib.pyplot as plt
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torchfusion_utils.metrics import Accuracy
@@ -14,6 +15,8 @@ from module.C3D import C3D
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 batch_size = 4
+n_epochs = 20
+save_path = 'output_module.pt'
 
 root_list = '/Users/dabincheng/Downloads/data/UCF-24'
 info_list = '/Users/dabincheng/Downloads/data/label/trianlist.txt'
@@ -32,36 +35,65 @@ moudel = moudel.to(device)
 lr = 0.001
 criteria = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(moudel.parameters(), lr=lr)
+milestones = [10, 15]
+scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones, gamma=0.1)
 
+def train(n_epochs, save_path):
 
-def train():
-
+    saving_criteria_of_model = 0
+    training_loss_array = []
     train_acc = Accuracy()
-    train_acc.reset()
 
-    for i_batch, sample_batched in enumerate(dataloader):
-        data, label = sample_batched['video_x'], sample_batched['video_label']
-        label = torch.squeeze(label)
-        data, label = data.float(), label.long() - 1
-        data = data.permute(0, 2, 1, 3, 4)
-        data, label = data.to(device), label.to(device)
-        optimizer.zero_grad()
-        predictions = moudel(data)
-        loss = criteria(predictions, label)
-        train_acc.update(predictions, label)
-        print(predictions.data, label) #
-        loss.backward()
-        expp = torch.softmax(predictions, dim=1)
-        confidence, clas = expp.topk(1, dim=1)
-        print(expp.data, confidence, clas) #
-        optimizer.step()
+    for i in range(n_epochs):
+        total_test_data = 0
+        training_loss = 0
+        train_acc.reset()
 
-        print(i_batch + 1, 'loss:{}'.format(loss.item()), '\t', 'train_acc:{}'.format(train_acc.getValue()))
+        for sample_batched in dataloader:
+            data, label = sample_batched['video_x'], sample_batched['video_label']
+            label = torch.squeeze(label)
+            data, label = data.float(), label.long() - 1
+            data, label = data.to(device), label.to(device)
+            data = data.permute(0, 2, 1, 3, 4)
+            optimizer.zero_grad()
+            predictions = moudel(data)
+            loss = criteria(predictions, label)
+            print(predictions.data, label) #
+            loss.backward()
+            # expp = torch.softmax(predictions, dim=1)
+            # confidence, clas = expp.topk(1, dim=1)
+            # print(expp.data, confidence, clas) #
+            optimizer.step()
+            training_loss += loss.item() * data.size(0)
+            train_acc.update(predictions, label)
+        scheduler.step()
+
+        training_loss = training_loss / len(myUCF101.__len__())
+        training_loss_array.append(training_loss)
+
+        print(
+            '{} / {} '.format(i + 1, n_epochs),
+            'Training loss: {}, '.format(training_loss),
+            'Tran_Accuracy: {}, '.format(train_acc.getValue()))
+
+        if saving_criteria_of_model < train_acc.getValue():
+            torch.save(moudel, save_path)
+            saving_criteria_of_model = train_acc.getValue()
+            print('--------------------------Saving Model---------------------------')
+
+        plt.figure(figsize=(4, 4))
+        x_axis = (range(n_epochs))
+        plt.plot(x_axis, training_loss_array, 'r')
+        plt.title('A gragh of training loss vs validation loss')
+        plt.legend(['train loss', 'validation loss'])
+        plt.xlabel('Number of Epochs')
+        plt.ylabel('Loss')
+        plt.show()
 
     return
 
 
 if __name__ == '__main__':
 
-    train()
+    train(n_epochs, save_path)
 
