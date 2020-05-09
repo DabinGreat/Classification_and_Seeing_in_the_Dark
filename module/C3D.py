@@ -29,7 +29,7 @@ class C3D(nn.Module):
 
         self.fc6 = nn.Linear(12800, 4096)
         self.fc7 = nn.Linear(4096, 4096)
-        self.fc8 = nn.Linear(4096, 24)
+        self.fc8 = nn.Linear(4096, 101)
 
         self.dropout = nn.Dropout(p=0.5)
 
