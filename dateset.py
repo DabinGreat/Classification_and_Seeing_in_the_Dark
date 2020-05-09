@@ -162,14 +162,19 @@ if __name__ == '__main__':
     root_list = '/Users/dabincheng/downloads/UCF-101/'
     info_list = '/Users/dabincheng/downloads/ucfTrainTestlist/trainlist01.txt'
     myUCF101 = UCF101(info_list, root_list,
-                      transform=transforms.Compose([ClipSubstractMean(), Rescale(), RandomCrop(), ToTensor(), ]))
+                      transform=transforms.Compose([
+                                                    # ClipSubstractMean(),
+                                                    Rescale(),
+                                                    RandomCrop(),
+                                                    ToTensor()
+                      ]))
 
     dataloader = DataLoader(myUCF101, batch_size=4, shuffle=True, num_workers=1)
 
-    # for i_batch, sample_batched in enumerate(dataloader):
-    #     if i_batch == 0:
-    #
-    #         print(i_batch, sample_batched['video_x'].size(), sample_batched['video_label'].size())
+    for i_batch, sample_batched in enumerate(dataloader):
+        if i_batch == 0:
+            print(sample_batched['video_x'].type(),sample_batched['video_x'])
+            # print(i_batch, sample_batched['video_x'].size(), sample_batched['video_label'].size())
 
 #b,t,c,h,w
-print( myUCF101.__len__())
+# print( myUCF101.__len__())

@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torchfusion_utils.metrics import Accuracy
+# from dateset import UCF101, ClipSubstractMean, RandomCrop, Rescale, ToTensor
 from dateset import UCF101, ClipSubstractMean, RandomCrop, Rescale, ToTensor
 from module.C3D import C3D
 
