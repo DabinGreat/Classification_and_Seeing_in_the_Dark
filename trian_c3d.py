@@ -40,6 +40,7 @@ optimizer = torch.optim.Adam(moudel.parameters(), lr=lr)
 milestones = [10, 15]
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones, gamma=0.1)
 
+
 def train(n_epochs, save_path):
 
     saving_criteria_of_model = 0
