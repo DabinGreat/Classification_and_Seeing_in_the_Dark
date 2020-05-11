@@ -80,7 +80,7 @@ def train(n_epochs, save_path):
         training_acc_array.append(train_acc.getValue())
 
         print(
-            '{} / {} '.format(i + 1, n_epochs),
+            '{} / {}'.format(i + 1, n_epochs),
             'Training loss: {}, '.format(training_loss),
             'Tran_Accuracy: {}, '.format(train_acc.getValue()))
 
