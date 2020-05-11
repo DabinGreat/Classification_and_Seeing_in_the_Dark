@@ -62,15 +62,15 @@ def train(n_epochs, save_path):
             optimizer.zero_grad()
             predictions = moudel(data)
             loss = criteria(predictions, label)
-            # print(predictions.data, label) #
+            print(predictions.data, label) #
             loss.backward()
-            # expp = torch.softmax(predictions, dim=1)
-            # confidence, clas = expp.topk(1, dim=1)
-            # print(expp.data, confidence, clas) #
+            expp = torch.softmax(predictions, dim=1)
+            confidence, clas = expp.topk(1, dim=1)
+            print(expp.data, confidence, clas) #
             optimizer.step()
             training_loss += loss.item() * data.size(0)
             train_acc.update(predictions, label)
-            # print(loss.item(), train_acc.getValue())
+            print(loss.item(), train_acc.getValue())
         scheduler.step()
 
         training_loss = training_loss / 2332

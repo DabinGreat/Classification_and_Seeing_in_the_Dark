@@ -40,7 +40,7 @@ class Rescale(object):
             to output_size keeping aspect ratio the same.
     """
 
-    def __init__(self, output_size=(182, 242)):
+    def __init__(self, output_size=(140, 140)):
         assert isinstance(output_size, (int, tuple))
         self.output_size = output_size
 
@@ -118,7 +118,7 @@ class Normalize(object):
 
     def __call__(self, sample):
         video_x, video_label = sample['video_x'], sample['video_label']
-        video_x = (video_x / 255)*2-1
+        video_x = ((video_x / 255)-0.5)*2
 
         return {'video_x':video_x, 'video_label': video_label}
 
