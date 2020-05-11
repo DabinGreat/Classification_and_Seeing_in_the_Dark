@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-# author: Dabin Cheng time: 2020/3/5
+# author: Dabin Cheng time: 2020/5/9
+
 
 import os
 import torch
@@ -8,9 +9,7 @@ import matplotlib.pyplot as plt
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from torchfusion_utils.metrics import Accuracy
-# from dateset import UCF101, ClipSubstractMean, RandomCrop, Rescale, ToTensor
-from dateset import UCF101, ClipSubstractMean, RandomCrop, Rescale, ToTensor
-from module.C3D import C3D
+from data.ucf101 import UCF101, ClipSubstractMean, RandomCrop, Rescale, ToTensor, Normalize
 from module.main_net import MainNet
 
 
@@ -18,19 +17,23 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 batch_size = 4
 n_epochs = 20
-save_path = 'output_module.pt'
+save_path = '/save_module/0509_c3d_01.pt'
 
-root_list = '/Users/dabincheng/Downloads/data/UCF-24'
-info_list = '/Users/dabincheng/Downloads/data/label/trianlist.txt'
+root_list = '/Users/dabincheng/downloads/UCF101_n_frames'
+info_list = '/Users/dabincheng/downloads/ucfTrainTestlist/trainlist01.txt'
 myUCF101 = UCF101(info_list, root_list,
-                  transform=transforms.Compose([Rescale(), RandomCrop(), ToTensor()]))
+                  transform=transforms.Compose([
+                      # Rescale(),
+                      RandomCrop(),
+                      ToTensor(),
+                      Normalize()
+                  ]))
 dataloader = DataLoader(myUCF101, batch_size=batch_size, shuffle=True, num_workers=4)
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-moudel = C3D()
 
-# moudel = MainNet(input_dim=32, hidden_dim=32, lstm_kernel_size=(3,3),
-#                  num_layers=4, batch_size=batch_size, num_class=24)
+moudel = MainNet(input_dim=32, hidden_dim=32, lstm_kernel_size=(3,3),
+                 num_layers=4, batch_size=batch_size, num_class=24)
 
 moudel = moudel.to(device)
 lr = 0.001
@@ -38,6 +41,7 @@ criteria = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(moudel.parameters(), lr=lr)
 milestones = [10, 15]
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones, gamma=0.1)
+
 
 def train(n_epochs, save_path):
 
@@ -60,7 +64,7 @@ def train(n_epochs, save_path):
             optimizer.zero_grad()
             predictions = moudel(data)
             loss = criteria(predictions, label)
-            print(predictions.data, label) #
+            # print(predictions.data, label) #
             loss.backward()
             # expp = torch.softmax(predictions, dim=1)
             # confidence, clas = expp.topk(1, dim=1)
@@ -68,11 +72,12 @@ def train(n_epochs, save_path):
             optimizer.step()
             training_loss += loss.item() * data.size(0)
             train_acc.update(predictions, label)
+            print(loss.item(), train_acc.getValue())
         scheduler.step()
 
         training_loss = training_loss / 2332
         training_loss_array.append(training_loss)
-        training_acc_array.append(train_acc)
+        training_acc_array.append(train_acc.getValue())
 
         print(
             '{} / {} '.format(i + 1, n_epochs),
@@ -95,7 +100,7 @@ def train(n_epochs, save_path):
     ax1.set_ylabel('training_loss_array')
     ax2.set_ylabel('training_acc_array')
     plt.title('A gragh of training loss')
-    plt.savefig('a.png')
+    plt.savefig('/result/0509_01.png')
     plt.show()
 
     return
