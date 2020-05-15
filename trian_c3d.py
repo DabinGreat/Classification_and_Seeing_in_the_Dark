@@ -17,7 +17,7 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 batch_size = 40
 n_epochs = 20
-save_path = '/save_module/0509_c3d_01.pt'
+save_path = './save_module/0509_c3d_01.pt'
 
 root_list = '/Users/dabincheng/downloads/UCF101_n_frames'
 info_train_list = '/Users/dabincheng/downloads/ucfTrainTestlist/trainlist01.txt'
@@ -126,7 +126,7 @@ def train_and_val(n_epochs, save_path):
     plt.legend(['train loss', 'validation loss'])
     plt.xlabel('Number of Epochs')
     plt.ylabel('Loss')
-    plt.savefig('/result/0515_c3d_loss_01.png')
+    plt.savefig('./result/0515_c3d_loss_01.png')
     plt.show()
 
     plt.figure(figsize=(4, 4))
@@ -136,7 +136,7 @@ def train_and_val(n_epochs, save_path):
     plt.legend(['train_acc', 'val_acc'])
     plt.xlabel('Number of Epochs')
     plt.ylabel('acc')
-    plt.savefig('/result/0515_c3d_acc_01.png')
+    plt.savefig('./result/0515_c3d_acc_01.png')
     plt.show()
 
     # x_axis = range(n_epochs)
