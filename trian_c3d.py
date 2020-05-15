@@ -15,96 +15,147 @@ from module.C3D import C3D
 
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
-batch_size = 4
+batch_size = 40
 n_epochs = 20
 save_path = '/save_module/0509_c3d_01.pt'
 
 root_list = '/Users/dabincheng/downloads/UCF101_n_frames'
-info_list = '/Users/dabincheng/downloads/ucfTrainTestlist/trainlist01.txt'
-myUCF101 = UCF101(info_list, root_list,
+info_train_list = '/Users/dabincheng/downloads/ucfTrainTestlist/trainlist01.txt'
+info_val_list = '/Users/dabincheng/downloads/ucfTrainTestlist/testlist001.txt'
+train_data = UCF101(info_train_list, root_list,
                   transform=transforms.Compose([
-                      # Rescale(),
+                      Rescale(),
                       RandomCrop(),
                       ToTensor(),
                       Normalize()
                   ]))
-dataloader = DataLoader(myUCF101, batch_size=batch_size, shuffle=True, num_workers=4)
+val_data = UCF101(info_val_list, root_list,
+                  transform=transforms.Compose([
+                      Rescale(),
+                      RandomCrop(),
+                      ToTensor(),
+                      Normalize()
+                  ]))
+train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4)
+val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True, num_workers=4)
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-moudel = C3D()
+module = C3D()
 
-moudel = moudel.to(device)
+module = module.to(device)
 lr = 0.001
 criteria = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(moudel.parameters(), lr=lr)
+optimizer = torch.optim.Adam(module.parameters(), lr=lr)
 milestones = [10, 15]
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones, gamma=0.1)
 
 
-def train(n_epochs, save_path):
+def train_and_val(n_epochs, save_path):
 
-    saving_criteria_of_model = 0
-    training_loss_array = []
-    training_acc_array = []
+    saving_criteria_of_module = 0
+    train_loss_array = []
+    val_loss_array =[]
+    train_acc_array = []
+    val_acc_array = []
     train_acc = Accuracy()
+    val_acc =Accuracy(topK=1)
 
     for i in range(n_epochs):
-        total_test_data = 0
-        training_loss = 0
+        train_loss = 0
+        val_loss = 0
+        # total_train_data = 0
+        # total_val_data = 0
         train_acc.reset()
 
-        for sample_batched in dataloader:
+        for sample_batched in train_dataloader:
             data, label = sample_batched['video_x'], sample_batched['video_label']
             label = torch.squeeze(label)
             data, label = data.float(), label.long() - 1
             data, label = data.to(device), label.to(device)
             data = data.permute(0, 2, 1, 3, 4)
             optimizer.zero_grad()
-            predictions = moudel(data)
+            predictions = module(data)
             loss = criteria(predictions, label)
-            print(predictions.data, label) #
             loss.backward()
-            expp = torch.softmax(predictions, dim=1)
-            confidence, clas = expp.topk(1, dim=1)
-            print(expp.data, confidence, clas) #
             optimizer.step()
-            training_loss += loss.item() * data.size(0)
+            train_loss += loss.item() * data.size(0)
+            # total_train_data += label.size(0)
             train_acc.update(predictions, label)
             print(loss.item(), train_acc.getValue())
         scheduler.step()
 
-        training_loss = training_loss / 2332
-        training_loss_array.append(training_loss)
-        training_acc_array.append(train_acc)
+        with torch.no_grad():
+            val_acc.reset()
+            for sample_batched in val_dataloader:
+                data, label = sample_batched['video_x'], sample_batched['video_label']
+                label = torch.squeeze(label)
+                data, label = data.float(), label.long() - 1
+                data, label = data.to(device), label.to(device)
+                data = data.permute(0, 2, 1, 3, 4)
+                predictions = module(data)
+                loss = criteria(predictions, label)
+                val_loss += loss.item() * data.size(0)
+                val_acc.update(predictions, label)
+                print(loss.item(), train_acc.getValue())
+
+
+        train_loss = train_loss / len(train_data[0])
+        val_loss = val_loss / len(val_data[0])
+        train_loss_array.append(train_loss)
+        val_loss_array.append(val_loss)
+        train_acc_array.append(train_acc.getValue())
+        val_acc_array.append(val_acc.getValue())
 
         print(
             '{} / {} '.format(i + 1, n_epochs),
-            'Training loss: {}, '.format(training_loss),
-            'Tran_Accuracy: {}, '.format(train_acc.getValue()))
+            'Train_loss: {}, '.format(train_loss),
+            'val_loss: {}, '.format(val_loss),
+            'Train_Accuracy: {}, '.format(train_acc.getValue()),
+            'val_Accuracy: {}, '.format(val_acc.getValue())
+        )
 
-        if saving_criteria_of_model < train_acc.getValue():
-            torch.save(moudel, save_path)
-            saving_criteria_of_model = train_acc.getValue()
+        if saving_criteria_of_model < val_acc.getValue():
+            torch.save(module, save_path)
+            saving_criteria_of_model = val_acc.getValue()
             print('--------------------------Saving Model---------------------------')
 
     plt.figure(figsize=(4, 4))
-    x_axis = range(n_epochs)
-    fig, ax1 = plt.subplots()
-    ax2 = ax1.twinx()
-    ax1.plot(x_axis, training_loss_array, 'b')
-    ax2.plot(x_axis, training_acc_array, 'r')
-
-    ax1.set_xlabel('n_epochs')
-    ax1.set_ylabel('training_loss_array')
-    ax2.set_ylabel('training_acc_array')
-    plt.title('A gragh of training loss')
-    plt.savefig('/result/0509_01.png')
+    x_axis = (range(n_epochs))
+    plt.plot(x_axis, train_loss_array, 'r', val_loss_array, 'b')
+    plt.title('A gragh of training loss vs validation loss')
+    plt.legend(['train loss', 'validation loss'])
+    plt.xlabel('Number of Epochs')
+    plt.ylabel('Loss')
+    plt.savefig('/result/0515_c3d_loss_01.png')
     plt.show()
+
+    plt.figure(figsize=(4, 4))
+    x_axis = (range(n_epochs))
+    plt.plot(x_axis, train_acc_array, 'r', val_acc_array, 'b')
+    plt.title('A gragh of training acc vs validation acc')
+    plt.legend(['train_acc', 'val_acc'])
+    plt.xlabel('Number of Epochs')
+    plt.ylabel('acc')
+    plt.savefig('/result/0515_c3d_acc_01.png')
+    plt.show()
+
+    # x_axis = range(n_epochs)
+    # fig, ax1 = plt.subplots()
+    # ax2 = ax1.twinx()
+    # ax1.plot(x_axis, train_loss_array, 'b')
+    # ax2.plot(x_axis, train_acc_array, 'r')
+    #
+    # ax1.set_xlabel('n_epochs')
+    # ax1.set_ylabel('training_loss_array')
+    # ax2.set_ylabel('training_acc_array')
+    # plt.title('A gragh of training loss')
+    # plt.savefig('/result/0509_01.png')
+    # plt.show()
 
     return
 
 
 if __name__ == '__main__':
 
-    train(n_epochs, save_path)
+    train_and_val(n_epochs, save_path)
 

@@ -40,7 +40,7 @@ class Rescale(object):
             to output_size keeping aspect ratio the same.
     """
 
-    def __init__(self, output_size=(140, 140)):
+    def __init__(self, output_size=(72, 72)):
         assert isinstance(output_size, (int, tuple))
         self.output_size = output_size
 
@@ -74,7 +74,7 @@ class RandomCrop(object):
             is made.
     """
 
-    def __init__(self, output_size=(128, 128)):
+    def __init__(self, output_size=(64, 64)):
         assert isinstance(output_size, (int, tuple))
         if isinstance(output_size, int):
             self.output_size = (output_size, output_size)
@@ -187,7 +187,7 @@ if __name__ == '__main__':
                       ])
     )
 
-    dataloader = DataLoader(myUCF101, batch_size=8, shuffle=False, num_workers=1)
+    dataloader = DataLoader(myUCF101, batch_size=8, shuffle=True, num_workers=1)
     for i_batch, sample_batched in enumerate(dataloader):
         if i_batch==1:
             print(i_batch,
