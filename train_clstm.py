@@ -82,7 +82,7 @@ def train_and_val(n_epochs, save_path):
             train_loss += loss.item() * data.size(0)
             total_train_data += label.size(0)
             train_acc.update(predictions, label)
-            print(loss.item(), train_acc.getValue())
+            print('train', loss.item(), train_acc.getValue())
         scheduler.step()
 
         with torch.no_grad():
@@ -98,7 +98,7 @@ def train_and_val(n_epochs, save_path):
                 val_loss += loss.item() * data.size(0)
                 total_val_data += label.size(0)
                 val_acc.update(predictions, label)
-                print(loss.item(), val_acc.getValue())
+                print('val', loss.item(), val_acc.getValue())
 
 
         train_loss = train_loss / total_train_data
@@ -116,9 +116,9 @@ def train_and_val(n_epochs, save_path):
             'val_Accuracy: {}, '.format(val_acc.getValue())
         )
 
-        if saving_criteria_of_model < val_acc.getValue():
+        if saving_criteria_of_module < val_acc.getValue():
             torch.save(module, save_path)
-            saving_criteria_of_model = val_acc.getValue()
+            saving_criteria_of_module = val_acc.getValue()
             print('--------------------------Saving Model---------------------------')
 
     plt.figure(figsize=(4, 4))
