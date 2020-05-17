@@ -22,14 +22,14 @@ class C3D(nn.Module):
         self.conv3b = nn.Conv3d(256, 256, kernel_size=(3, 3, 3), padding=(1, 1, 1))
         self.pool3 = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
 
-        self.conv4a = nn.Conv3d(256, 512, kernel_size=(3, 3, 3), padding=(1, 1, 1))
-        self.conv4b = nn.Conv3d(512, 512, kernel_size=(3, 3, 3), padding=(1, 1, 1))
+        self.conv4a = nn.Conv3d(256, 256, kernel_size=(3, 3, 3), padding=(1, 1, 1))
+        self.conv4b = nn.Conv3d(256, 256, kernel_size=(3, 3, 3), padding=(1, 1, 1))
         self.pool4 = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
 
         self.conv5a = nn.Conv3d(512, 512, kernel_size=(3, 3, 3), padding=(1, 1, 1))
         self.conv5b = nn.Conv3d(512, 512, kernel_size=(3, 3, 3), padding=(1, 1, 1))
         self.pool5 = nn.MaxPool3d(kernel_size=(1, 2, 2), stride=(1, 2, 2))
-        self.conv6 = nn.Conv3d(512, 32, kernel_size=(1, 1, 1))
+        self.conv6 = nn.Conv3d(256, 32, kernel_size=(1, 1, 1))
 
         # self.fc6 = nn.Linear(8192, 4096)
         # self.fc7 = nn.Linear(4096, 4096)
@@ -56,9 +56,9 @@ class C3D(nn.Module):
         h = self.relu(self.conv4b(h))
         h = self.pool4(h)
 
-        h = self.relu(self.conv5a(h))
-        h = self.relu(self.conv5b(h))
-        h = self.pool5(h)
+        # h = self.relu(self.conv5a(h))
+        # h = self.relu(self.conv5b(h))
+        # h = self.pool5(h)
         h = self.conv6(h)
 
 
@@ -370,8 +370,10 @@ class MainNet(nn.Module):
 
         x, _ = self.convlstm(x)
         x = x[0]
-        x = x.view(x.size([0]), -1)
+        x = torch.flatten(x, start_dim=1, end_dim=-1)
         x = self.fc(x)
 
         return x
+
+
 

@@ -17,8 +17,9 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 batch_size = 40
 n_epochs = 20
-save_path = './save_module/0509_c3d_01.pt'
+milestones = [10, 15]
 
+save_path = './save_module/0509_c3d_01.pt'
 root_list = '/Users/dabincheng/downloads/UCF101_n_frames'
 info_train_list = '/Users/dabincheng/downloads/ucfTrainTestlist/trainlist01.txt'
 info_val_list = '/Users/dabincheng/downloads/ucfTrainTestlist/testlist001.txt'
@@ -46,7 +47,6 @@ module = module.to(device)
 lr = 0.001
 criteria = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(module.parameters(), lr=lr)
-milestones = [10, 15]
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones, gamma=0.1)
 
 
@@ -63,8 +63,8 @@ def train_and_val(n_epochs, save_path):
     for i in range(n_epochs):
         train_loss = 0
         val_loss = 0
-        # total_train_data = 0
-        # total_val_data = 0
+        total_train_data = 0
+        total_val_data = 0
         train_acc.reset()
 
         for sample_batched in train_dataloader:
@@ -79,7 +79,7 @@ def train_and_val(n_epochs, save_path):
             loss.backward()
             optimizer.step()
             train_loss += loss.item() * data.size(0)
-            # total_train_data += label.size(0)
+            total_train_data += label.size(0)
             train_acc.update(predictions, label)
             print(loss.item(), train_acc.getValue())
         scheduler.step()
@@ -95,12 +95,13 @@ def train_and_val(n_epochs, save_path):
                 predictions = module(data)
                 loss = criteria(predictions, label)
                 val_loss += loss.item() * data.size(0)
+                total_val_data += label.size(0)
                 val_acc.update(predictions, label)
-                print(loss.item(), train_acc.getValue())
+                print(loss.item(), val_acc.getValue())
 
 
-        train_loss = train_loss / len(train_data[0])
-        val_loss = val_loss / len(val_data[0])
+        train_loss = train_loss / total_train_data
+        val_loss = val_loss / total_val_data
         train_loss_array.append(train_loss)
         val_loss_array.append(val_loss)
         train_acc_array.append(train_acc.getValue())
@@ -123,7 +124,7 @@ def train_and_val(n_epochs, save_path):
     x_axis = (range(n_epochs))
     plt.plot(x_axis, train_loss_array, 'r', val_loss_array, 'b')
     plt.title('A gragh of training loss vs validation loss')
-    plt.legend(['train loss', 'validation loss'])
+    plt.legend(['train loss', 'val loss'])
     plt.xlabel('Number of Epochs')
     plt.ylabel('Loss')
     plt.savefig('./result/0515_c3d_loss_01.png')
