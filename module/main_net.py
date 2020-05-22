@@ -356,7 +356,7 @@ class MainNet(nn.Module):
                             num_layers=self.num_layers)
         self.c3d = c3d
         self.convlstm = convlstm
-        self.fc = nn.Linear(8192,self.num_class)
+        self.fc = nn.Linear(512,self.num_class)
 
 
     def forward(self, input_tensor):
@@ -369,7 +369,7 @@ class MainNet(nn.Module):
         # x_total = x_channel * x_squence * x_high * x_width
 
         x, _ = self.convlstm(x)
-        x = x[0]
+        x = x[0][:, 15, :, :, :]
         x = torch.flatten(x, start_dim=1, end_dim=-1)
         x = self.fc(x)
 
