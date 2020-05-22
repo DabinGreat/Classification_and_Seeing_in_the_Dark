@@ -24,7 +24,6 @@ lr = 0.001
 # EncoderCNN architecture
 CNN_fc_hidden1, CNN_fc_hidden2 = 1024, 768
 CNN_embed_dim = 512  # latent dim extracted by 2D CNN
-res_size = 224  # ResNet image size
 dropout_p = 0.0  # dropout probability
 
 # DecoderRNN architecture
@@ -80,14 +79,15 @@ elif torch.cuda.device_count() == 1:
                   list(cnn_encoder.fc2.parameters()) + list(cnn_encoder.bn2.parameters()) + \
                   list(cnn_encoder.fc3.parameters()) + list(rnn_decoder.parameters())
 
-# crnn_params = list(cnn_encoder.fc1.parameters()) + list(cnn_encoder.bn1.parameters()) + \
-#               list(cnn_encoder.fc2.parameters()) + list(cnn_encoder.bn2.parameters()) + \
-#               list(cnn_encoder.fc3.parameters()) + list(rnn_decoder.parameters())
+# use cpu
+else:
+    crnn_params = list(cnn_encoder.fc1.parameters()) + list(cnn_encoder.bn1.parameters()) + \
+                  list(cnn_encoder.fc2.parameters()) + list(cnn_encoder.bn2.parameters()) + \
+                  list(cnn_encoder.fc3.parameters()) + list(rnn_decoder.parameters())
 
 criteria = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(crnn_params, lr=lr)
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones, gamma=0.1)
-
 
 
 def train_and_val(n_epochs, save_path):
