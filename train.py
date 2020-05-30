@@ -8,6 +8,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 from torchvision import transforms
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from torchfusion_utils.metrics import Accuracy
 from data.ucf101 import UCF101, ClipSubstractMean, RandomCrop, Rescale, ToTensor, Normalize
 from module.clstm import ResCNNEncoder, DecoderRNN
@@ -16,7 +17,7 @@ from module.clstm import ResCNNEncoder, DecoderRNN
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 num_class = 101
-batch_size = 4
+batch_size = 40
 n_epochs = 20
 milestones = [10, 15]
 lr = 0.001
@@ -92,11 +93,14 @@ scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones, gamma=0.
 
 def train_and_val(n_epochs, save_path):
 
+    writer_train = SummaryWriter('./result/train_log/')
+    writer_val = SummaryWriter('./result/test_log/')
+
     saving_criteria_of_module = 0
-    train_loss_array = []
-    val_loss_array =[]
-    train_acc_array = []
-    val_acc_array = []
+    # train_loss_array = []
+    # val_loss_array =[]
+    # train_acc_array = []
+    # val_acc_array = []
     train_acc = Accuracy()
     val_acc =Accuracy(topK=1)
 
@@ -147,10 +151,17 @@ def train_and_val(n_epochs, save_path):
 
         train_loss = train_loss / total_train_data
         val_loss = val_loss / total_val_data
-        train_loss_array.append(train_loss)
-        val_loss_array.append(val_loss)
-        train_acc_array.append(train_acc.getValue())
-        val_acc_array.append(val_acc.getValue())
+
+        writer_train.add_scalar('train_loss', train_loss, i)
+        writer_train.add_scalar('train_acc', train_acc.getValue(), i)
+        writer_val.add_scalar('test_loss', val_loss, i)
+        writer_val.add_scalar('test_acc', val_acc.getValue(), i)
+
+
+        # train_loss_array.append(train_loss)
+        # val_loss_array.append(val_loss)
+        # train_acc_array.append(train_acc.getValue())
+        # val_acc_array.append(val_acc.getValue())
 
         print(
             '{} / {} '.format(i + 1, n_epochs),
@@ -167,25 +178,28 @@ def train_and_val(n_epochs, save_path):
             saving_criteria_of_module = val_acc.getValue()
             print('--------------------------Saving Model---------------------------')
 
-    plt.figure(figsize=(4, 4))
-    x_axis = (range(n_epochs))
-    plt.plot(x_axis, train_loss_array, 'r', val_loss_array, 'b')
-    plt.title('A gragh of training loss vs validation loss')
-    plt.legend(['train loss', 'val loss'])
-    plt.xlabel('Number of Epochs')
-    plt.ylabel('Loss')
-    plt.savefig('./result/0515_c3d_loss_01.png')
-    plt.show()
+    writer_train.close()
+    writer_val.close()
 
-    plt.figure(figsize=(4, 4))
-    x_axis = (range(n_epochs))
-    plt.plot(x_axis, train_acc_array, 'r', val_acc_array, 'b')
-    plt.title('A gragh of training acc vs validation acc')
-    plt.legend(['train_acc', 'val_acc'])
-    plt.xlabel('Number of Epochs')
-    plt.ylabel('acc')
-    plt.savefig('./result/0515_c3d_acc_01.png')
-    plt.show()
+    # plt.figure(figsize=(4, 4))
+    # x_axis = (range(n_epochs))
+    # plt.plot(x_axis, train_loss_array, 'r', val_loss_array, 'b')
+    # plt.title('A gragh of training loss vs validation loss')
+    # plt.legend(['train loss', 'val loss'])
+    # plt.xlabel('Number of Epochs')
+    # plt.ylabel('Loss')
+    # plt.savefig('./result/0515_c3d_loss_01.png')
+    # plt.show()
+    #
+    # plt.figure(figsize=(4, 4))
+    # x_axis = (range(n_epochs))
+    # plt.plot(x_axis, train_acc_array, 'r', val_acc_array, 'b')
+    # plt.title('A gragh of training acc vs validation acc')
+    # plt.legend(['train_acc', 'val_acc'])
+    # plt.xlabel('Number of Epochs')
+    # plt.ylabel('acc')
+    # plt.savefig('./result/0515_c3d_acc_01.png')
+    # plt.show()
 
     # x_axis = range(n_epochs)
     # fig, ax1 = plt.subplots()
