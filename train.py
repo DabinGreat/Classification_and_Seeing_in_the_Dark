@@ -10,7 +10,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from torchfusion_utils.metrics import Accuracy
-from data.ucf101 import UCF101, ClipSubstractMean, RandomCrop, Rescale, ToTensor, Normalize
+from data.ucf101 import UCF101, RandomCrop, Rescale, ToTensor, Normalize
 from module.clstm import ResCNNEncoder, DecoderRNN
 
 
@@ -18,8 +18,8 @@ os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 num_class = 101
 batch_size = 40
-n_epochs = 20
-milestones = [10, 15]
+n_epochs = 100
+milestones = [50, 80]
 lr = 0.001
 
 # EncoderCNN architecture
@@ -33,9 +33,9 @@ RNN_hidden_nodes = 512
 RNN_FC_dim = 256
 
 save_path = './save_module/'
-root_list = '/Users/dabincheng/downloads/UCF101_n_frames'
-info_train_list = '/Users/dabincheng/downloads/ucfTrainTestlist/trainlist01.txt'
-info_val_list = '/Users/dabincheng/downloads/ucfTrainTestlist/testlist001.txt'
+root_list = '/home/chengdabing/data/ucf/UCF101_n_frames'
+info_train_list = '/home/chengdabing/data/label/ucfTrainTestlist/trainlist01.txt'
+info_val_list = '/home/chengdabing/data/label/ucfTrainTestlist/testlist001.txt'
 
 train_data = UCF101(info_train_list, root_list,
                   transform=transforms.Compose([
@@ -51,10 +51,10 @@ val_data = UCF101(info_val_list, root_list,
                       ToTensor(),
                       Normalize()
                   ]))
-train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4)
-val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True, num_workers=4)
+train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=0)
+val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True, num_workers=0)
 
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Create model
 cnn_encoder = ResCNNEncoder(fc_hidden1=CNN_fc_hidden1, fc_hidden2=CNN_fc_hidden2, drop_p=dropout_p,
@@ -102,7 +102,9 @@ def train_and_val(n_epochs, save_path):
     # train_acc_array = []
     # val_acc_array = []
     train_acc = Accuracy()
-    val_acc =Accuracy(topK=1)
+    val_acc_top1 =Accuracy(topK=1)
+    val_acc_top5 =Accuracy(topK=5)
+
 
     cnn_encoder.train()
     rnn_decoder.train()
@@ -114,7 +116,7 @@ def train_and_val(n_epochs, save_path):
         total_val_data = 0
         train_acc.reset()
 
-        for sample_batched in train_dataloader:
+        for i_batch, sample_batched in enumerate(train_dataloader):
             data, label = sample_batched['video_x'], sample_batched['video_label']
             label = torch.squeeze(label)
             data, label = data.float(), label.long() - 1
@@ -127,7 +129,10 @@ def train_and_val(n_epochs, save_path):
             train_loss += loss.item() * data.size(0)
             total_train_data += label.size(0)
             train_acc.update(predictions, label)
-            print('train', loss.item(), train_acc.getValue())
+
+            if i_batch % 10 ==0:
+                print(i_batch // 10, 'train', loss.item(), train_acc.getValue())
+
         scheduler.step()
 
         with torch.no_grad():
@@ -135,8 +140,10 @@ def train_and_val(n_epochs, save_path):
             cnn_encoder.eval()
             rnn_decoder.eval()
 
-            val_acc.reset()
-            for sample_batched in val_dataloader:
+            val_acc_top1.reset()
+            val_acc_top5.reset()
+
+            for i_batch, sample_batched in enumerate(val_dataloader):
                 data, label = sample_batched['video_x'], sample_batched['video_label']
                 label = torch.squeeze(label)
                 data, label = data.float(), label.long() - 1
@@ -145,8 +152,11 @@ def train_and_val(n_epochs, save_path):
                 loss = criteria(predictions, label)
                 val_loss += loss.item() * data.size(0)
                 total_val_data += label.size(0)
-                val_acc.update(predictions, label)
-                print('val', loss.item(), val_acc.getValue())
+                val_acc_top1.update(predictions, label)
+                val_acc_top5.update(predictions, label)
+
+                if i_batch % 10 == 0:
+                    print(i_batch // 10, 'val_top1', loss.item(), val_acc_top1.getValue())
 
 
         train_loss = train_loss / total_train_data
@@ -155,7 +165,8 @@ def train_and_val(n_epochs, save_path):
         writer_train.add_scalar('train_loss', train_loss, i)
         writer_train.add_scalar('train_acc', train_acc.getValue(), i)
         writer_val.add_scalar('test_loss', val_loss, i)
-        writer_val.add_scalar('test_acc', val_acc.getValue(), i)
+        writer_val.add_scalar('test_acc_top1', val_acc_top1.getValue(), i)
+        writer_val.add_scalar('test_acc_top5', val_acc_top5.getValue(), i)
 
 
         # train_loss_array.append(train_loss)
@@ -168,14 +179,14 @@ def train_and_val(n_epochs, save_path):
             'Train_loss: {}, '.format(train_loss),
             'val_loss: {}, '.format(val_loss),
             'Train_Accuracy: {}, '.format(train_acc.getValue()),
-            'val_Accuracy: {}, '.format(val_acc.getValue())
+            'val_Accuracy: {}, '.format(val_acc_top1.getValue())
         )
 
-        if saving_criteria_of_module < val_acc.getValue():
+        if saving_criteria_of_module < val_acc_top1.getValue():
             torch.save(cnn_encoder.state_dict(), os.path.join(save_path, 'cnn_encoder.pth'))
             torch.save(rnn_decoder.state_dict(), os.path.join(save_path, 'rnn_decoder.pth'))
             torch.save(optimizer.state_dict(), os.path.join(save_path, 'optimizer.pth'))
-            saving_criteria_of_module = val_acc.getValue()
+            saving_criteria_of_module = val_acc_top1.getValue()
             print('--------------------------Saving Model---------------------------')
 
     writer_train.close()
