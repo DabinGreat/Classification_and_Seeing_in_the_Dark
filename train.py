@@ -51,8 +51,8 @@ val_data = UCF101(info_val_list, root_list,
                       ToTensor(),
                       Normalize()
                   ]))
-train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=0)
-val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True, num_workers=0)
+train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=6)
+val_dataloader = DataLoader(val_data, batch_size=batch_size, shuffle=True, num_workers=6)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -105,16 +105,15 @@ def train_and_val(n_epochs, save_path):
     val_acc_top1 =Accuracy(topK=1)
     val_acc_top5 =Accuracy(topK=5)
 
-
-    cnn_encoder.train()
-    rnn_decoder.train()
-
     for i in range(n_epochs):
         train_loss = 0
         val_loss = 0
         total_train_data = 0
         total_val_data = 0
         train_acc.reset()
+
+        cnn_encoder.train()
+        rnn_decoder.train()
 
         for i_batch, sample_batched in enumerate(train_dataloader):
             data, label = sample_batched['video_x'], sample_batched['video_label']

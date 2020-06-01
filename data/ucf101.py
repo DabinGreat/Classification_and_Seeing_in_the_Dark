@@ -40,7 +40,7 @@ class Rescale(object):
             to output_size keeping aspect ratio the same.
     """
 
-    def __init__(self, output_size=(72, 72)):
+    def __init__(self, output_size=(250, 250)):
         assert isinstance(output_size, (int, tuple))
         self.output_size = output_size
 
@@ -74,7 +74,7 @@ class RandomCrop(object):
             is made.
     """
 
-    def __init__(self, output_size=(64, 64)):
+    def __init__(self, output_size=(224, 224)):
         assert isinstance(output_size, (int, tuple))
         if isinstance(output_size, int):
             self.output_size = (output_size, output_size)
